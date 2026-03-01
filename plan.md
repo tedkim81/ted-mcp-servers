@@ -466,6 +466,12 @@ server {
     #     ... (same proxy settings)
     # }
 
+    # ─── Domain verification (OpenAI Apps) ───
+    location = /.well-known/openai-apps-challenge {
+        return 200 '_c3oL6tq5igjgS91lqyRaccPmNuIakZeclCMpFMJSyI';
+        add_header Content-Type text/plain;
+    }
+
     # ─── Health check ───
     location = / {
         return 200 'ted-mcp-servers server is running';
@@ -530,6 +536,12 @@ server {
     }
 
     # ─── 앱 추가 시 location 블록 추가 ───
+
+    # ─── Domain verification (OpenAI Apps) ───
+    location = /.well-known/openai-apps-challenge {
+        return 200 '_c3oL6tq5igjgS91lqyRaccPmNuIakZeclCMpFMJSyI';
+        add_header Content-Type text/plain;
+    }
 
     location = / {
         return 200 'ted-mcp-servers server is running';
