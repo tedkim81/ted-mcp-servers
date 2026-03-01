@@ -552,20 +552,7 @@ server {
 
 > **인증서 1개**로 모든 앱 경로를 커버. 앱을 추가해도 인증서 재발급 불필요.
 
-#### 5-8. CSP(Content Security Policy) 설정
-
-App Directory 제출 **필수 요건**. `src/server.ts`의 응답 헤더에 추가:
-
-```typescript
-res.setHeader(
-  "Content-Security-Policy",
-  "default-src 'none'; frame-ancestors 'self' https://chatgpt.com https://*.chatgpt.com"
-);
-```
-
-위젯 HTML은 외부 리소스를 로드하지 않으므로 제한적 CSP 적용 가능.
-
-#### 5-9. 배포 후 검증
+#### 5-8. 배포 후 검증
 
 ```bash
 # 서버 전체 헬스체크
@@ -587,7 +574,7 @@ curl -X POST https://apps.yourdomain.com/ladder-pick/mcp \
 curl -vI https://apps.yourdomain.com/ 2>&1 | grep "SSL certificate"
 ```
 
-#### 5-10. 코드 업데이트 방법
+#### 5-9. 코드 업데이트 방법
 
 ```bash
 # SSH 접속 후 — 특정 앱만 업데이트 (다른 앱에 영향 없음)
@@ -601,7 +588,7 @@ pm2 restart ladder-pick
 pm2 status
 ```
 
-#### 5-11. 배포 체크리스트
+#### 5-10. 배포 체크리스트
 
 **공통 인프라 (최초 1회)**:
 - [ ] Lightsail 인스턴스(`ted-mcp-servers`) 생성 및 고정 IP 연결

@@ -1,6 +1,6 @@
 # Privacy Policy — Ladder Pick
 
-**Last updated: February 28, 2026**
+**Last updated: March 2, 2026**
 
 ## Overview
 
@@ -40,7 +40,7 @@ Ladder Pick does not knowingly collect information from children under 13.
 
 ## Contact
 
-For privacy-related questions, please contact: **[your-email@example.com]**
+For privacy-related questions, please contact: **[tedkim.developer@gmail.com]**
 
 ---
 
