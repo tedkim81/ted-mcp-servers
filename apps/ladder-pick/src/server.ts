@@ -173,6 +173,10 @@ const httpServer = createServer(async (req, res) => {
     MCP_METHODS.has(req.method)
   ) {
     Object.entries(CORS_HEADERS).forEach(([k, v]) => res.setHeader(k, v));
+    res.setHeader(
+      "Content-Security-Policy",
+      "default-src 'none'; frame-ancestors 'self' https://chatgpt.com https://*.chatgpt.com"
+    );
 
     const server = createLadderServer();
     const transport = new StreamableHTTPServerTransport({

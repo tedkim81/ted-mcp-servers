@@ -413,6 +413,7 @@ cd ted-mcp-servers
 
 # ─── Ladder Pick 배포 ───
 cd apps/ladder-pick
+echo "optional=false" > .npmrc
 pnpm install --frozen-lockfile
 pnpm build
 PORT=8787 pm2 start dist/server.js --name ladder-pick
@@ -444,7 +445,7 @@ server {
     listen 80;
     server_name apps.yourdomain.com;
 
-    # ─── Ladder Pick (포트 8787) ───
+    # ─── Ladder Pick (port 8787) ───
     location /ladder-pick/ {
         proxy_pass http://127.0.0.1:8787/;
         proxy_http_version 1.1;
@@ -459,13 +460,13 @@ server {
         proxy_read_timeout 3600s;
     }
 
-    # ─── 새 앱 추가 시 location 블록 복사 ───
+    # ─── Add new app: copy location block ───
     # location /other-app/ {
     #     proxy_pass http://127.0.0.1:8788/;
-    #     ... (동일한 proxy 설정)
+    #     ... (same proxy settings)
     # }
 
-    # ─── 헬스체크 ───
+    # ─── Health check ───
     location = / {
         return 200 'ted-mcp-servers server is running';
         add_header Content-Type text/plain;
