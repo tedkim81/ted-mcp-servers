@@ -29,7 +29,7 @@ apps/ladder-pick/
 │   ├── server.ts             # MCP server entry point
 │   ├── types.ts              # Shared types
 │   ├── core/
-│   │   ├── rng.ts            # Seeded RNG + Fisher-Yates shuffle
+│   │   ├── rng.ts            # Seeded RNG (mulberry32) + Fisher-Yates shuffle
 │   │   ├── ladder.ts         # Matching algorithm
 │   │   ├── validate.ts       # Input validation
 │   │   └── game-store.ts     # In-memory game state
@@ -38,8 +38,11 @@ apps/ladder-pick/
 │       ├── reshuffle.ts      # reshuffle tool
 │       ├── reveal-next.ts    # reveal_next tool
 │       └── export-result.ts  # export_result tool
+├── assets/
+│   └── ladder-pick-icon.svg  # App Directory icon
 ├── docs/
 │   ├── privacy-policy.md
+│   ├── terms-of-service.md
 │   └── test-prompts.md
 ├── .env.example
 ├── package.json
@@ -98,6 +101,32 @@ Provide the public URL (e.g. `https://<id>.ngrok.app/mcp`) when adding a connect
 | Variable | Default | Description |
 |---|---|---|
 | `PORT` | `8787` | HTTP server port |
+
+## Deployment (AWS Lightsail)
+
+The server runs on an AWS Lightsail instance with Nginx reverse proxy and Let's Encrypt HTTPS.
+
+### Deploy after code changes
+
+```bash
+# SSH into the Lightsail instance, then:
+
+cd ~/ted-mcp-servers/apps/ladder-pick
+git pull
+pnpm install --frozen-lockfile
+pnpm build
+pm2 restart ladder-pick
+
+# Check process status
+pm2 status
+```
+
+### Verify deployment
+
+```bash
+curl https://mcp.iamted.kim/
+# Expected: "Ladder Pick MCP server is running"
+```
 
 ## License
 

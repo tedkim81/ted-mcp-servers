@@ -166,6 +166,13 @@ const httpServer = createServer(async (req, res) => {
     return;
   }
 
+  if (req.method === "GET" && url.pathname === "/.well-known/openai-apps-challenge") {
+    res
+      .writeHead(200, { "content-type": "text/plain" })
+      .end("_c3oL6tq5igjgS91lqyRaccPmNuIakZeclCMpFMJSyI");
+    return;
+  }
+
   const MCP_METHODS = new Set(["POST", "GET", "DELETE"]);
   if (
     url.pathname === MCP_PATH &&
