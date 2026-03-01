@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ladder Pick</title>
+    <style>
+      :root {
+        --primary: #5046e5;
+        --primary-hover: #3d34c7;
+        --danger: #e53e3e;
+        --bg: #f4f5f9;
+        --card: #ffffff;
+        --border: #dde1ec;
+        --text: #1a1a2e;
+        --muted: #6c768a;
+        --radius: 14px;
+        --radius-sm: 8px;
+        --shadow: 0 8px 24px rgba(15, 23, 42, 0.10);
+        color: var(--text);
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        font-size: 15px;
+      }
+      *, *::before, *::after { box-sizing: border-box; }
+      html, body { width: 100%; margin: 0; padding: 0; background: var(--bg); }
+      body { padding: 14px; }
+
+      .card {
+        background: var(--card);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 20px;
+        margin: 0 auto;
+        max-width: 520px;
+      }
+      .card + .card { margin-top: 12px; }
+
+      h1 { margin: 0 0 2px; font-size: 1.15rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+      h1 .emoji { font-size: 1.3rem; }
+      .subtitle { color: var(--muted); font-size: 0.82rem; margin: 0 0 16px; }
+
+      .section-label {
+        font-weight: 600; font-size: 0.78rem; letter-spacing: 0.04em;
+        text-transform: uppercase; color: var(--muted); margin-bottom: 6px;
+      }
+      .list-section { margin-bottom: 14px; }
+
+      .tag-list { display: flex; flex-wrap: wrap; gap: 5px; min-height: 30px; margin-bottom: 6px; }
+      .tag {
+        display: inline-flex; align-items: center; gap: 3px;
+        background: #f0f1fb; border: 1px solid var(--border);
+        border-radius: 18px; padding: 3px 8px 3px 10px;
+        font-size: 0.84rem; font-weight: 500;
+      }
+      .tag button {
+        background: none; border: none; cursor: pointer; color: var(--muted);
+        font-size: 0.95rem; line-height: 1; padding: 0 2px;
+      }
+      .tag button:hover { color: var(--danger); }
+
+      .input-row { display: flex; gap: 6px; }
+      .input-row input {
+        flex: 1; padding: 8px 10px; border: 1px solid var(--border);
+        border-radius: var(--radius-sm); font-size: 0.9rem; outline: none;
+      }
+      .input-row input:focus { border-color: var(--primary); }
+
+      .btn {
+        padding: 8px 14px; border: none; border-radius: var(--radius-sm);
+        font-size: 0.88rem; font-weight: 600; cursor: pointer;
+        transition: background 0.15s, opacity 0.15s; white-space: nowrap;
+      }
+      .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+      .btn-primary { background: var(--primary); color: #fff; }
+      .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
+      .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+      .btn-outline:hover:not(:disabled) { background: #f0f1fb; }
+      .btn-sm { padding: 5px 10px; font-size: 0.78rem; }
+
+      .options-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 14px; }
+      .toggle-group { display: flex; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+      .toggle-group button {
+        background: none; border: none; padding: 6px 12px; font-size: 0.82rem;
+        cursor: pointer; color: var(--muted); font-weight: 500;
+      }
+      .toggle-group button.active { background: var(--primary); color: #fff; font-weight: 600; }
+
+      .seed-input {
+        flex: 1; min-width: 110px; padding: 6px 8px; border: 1px solid var(--border);
+        border-radius: var(--radius-sm); font-size: 0.82rem; outline: none; font-family: monospace;
+      }
+      .seed-input:focus { border-color: var(--primary); }
+
+      .cta-row { display: flex; justify-content: flex-end; }
+
+      .error-msg {
+        background: #fff5f5; border: 1px solid #fed7d7; color: var(--danger);
+        border-radius: var(--radius-sm); padding: 8px 12px; font-size: 0.85rem;
+        margin-bottom: 10px; display: none;
+      }
+      .error-msg.visible { display: block; }
+
+      .ladder-card { display: none; }
+      .ladder-card.visible { display: block; }
+      .ladder-header {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 10px; gap: 6px; flex-wrap: wrap;
+      }
+      .ladder-title { font-weight: 700; font-size: 1rem; margin: 0; }
+      .ladder-actions { display: flex; gap: 5px; flex-wrap: wrap; }
+      .canvas-wrap { width: 100%; overflow-x: auto; margin-bottom: 8px; }
+      canvas { display: block; border-radius: 8px; background: #fafbfe; }
+      .seed-badge { font-size: 0.75rem; color: var(--muted); font-family: monospace; }
+      .reveal-status { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+
+      .standalone-banner {
+        position: fixed; top: 0; left: 0; right: 0;
+        background: #fef3cd; color: #856404; text-align: center;
+        font-size: 0.78rem; padding: 4px 8px; z-index: 50;
+        border-bottom: 1px solid #ffc107;
+      }
+      body.standalone { padding-top: 30px; }
+
+      .toast {
+        position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%) translateY(60px);
+        background: #1a202c; color: #fff; padding: 8px 18px; border-radius: 20px;
+        font-size: 0.84rem; font-weight: 500; transition: transform 0.25s ease;
+        pointer-events: none; z-index: 100;
+      }
+      .toast.show { transform: translateX(-50%) translateY(0); }
+
+      @media (max-width: 420px) {
+        body { padding: 8px; }
+        .card { padding: 14px; }
+        .options-row { flex-direction: column; align-items: stretch; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="standalone-banner" class="standalone-banner" style="display:none">
+      Standalone Mode — testing without MCP server
+    </div>
+
+    <div class="card" id="input-card">
+      <h1><span class="emoji">🪜</span> Ladder Pick</h1>
+      <p class="subtitle">Random 1:1 matching — ladder style!</p>
+      <div id="error-msg" class="error-msg" role="alert"></div>
+
+      <div class="list-section">
+        <div class="section-label">Players</div>
+        <div class="tag-list" id="players-list"></div>
+        <div class="input-row">
+          <input id="player-input" placeholder="Add player name…" autocomplete="off" maxlength="50" />
+          <button class="btn btn-outline" id="add-player-btn">Add</button>
+        </div>
+      </div>
+
+      <div class="list-section">
+        <div class="section-label">Items</div>
+        <div class="tag-list" id="items-list"></div>
+        <div class="input-row">
+          <input id="item-input" placeholder="Add item…" autocomplete="off" maxlength="50" />
+          <button class="btn btn-outline" id="add-item-btn">Add</button>
+        </div>
+      </div>
+
+      <div class="options-row">
+        <div>
+          <div class="section-label" style="margin-bottom:4px">Reveal</div>
+          <div class="toggle-group" id="reveal-toggle">
+            <button class="active" data-mode="all">All at once</button>
+            <button data-mode="one-by-one">One by one</button>
+          </div>
+        </div>
+        <div style="flex:1;min-width:130px">
+          <div class="section-label" style="margin-bottom:4px">Seed <span style="font-weight:400;text-transform:none">(optional)</span></div>
+          <input class="seed-input" id="seed-input" placeholder="auto" maxlength="36" />
+        </div>
+      </div>
+
+      <div class="cta-row">
+        <button class="btn btn-primary" id="pick-btn">🎲 Pick!</button>
+      </div>
+    </div>
+
+    <div class="card ladder-card" id="ladder-card">
+      <div class="ladder-header">
+        <h2 class="ladder-title">🪜 Ladder</h2>
+        <div class="ladder-actions">
+          <button class="btn btn-outline btn-sm" id="reveal-next-btn" style="display:none">Reveal Next ▶</button>
+          <button class="btn btn-outline btn-sm" id="reshuffle-btn">🔀 Reshuffle</button>
+          <button class="btn btn-outline btn-sm" id="export-btn">📋 Export</button>
+          <button class="btn btn-outline btn-sm" id="new-game-btn">↩ New</button>
+        </div>
+      </div>
+      <div class="canvas-wrap" id="canvas-wrap">
+        <canvas id="ladder-canvas"></canvas>
+      </div>
+      <div class="seed-badge" id="seed-display"></div>
+      <div class="reveal-status" id="reveal-status"></div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script type="module">
+      // ═══════════════════════════════════════════════════════════
+      // STATE
+      // ═══════════════════════════════════════════════════════════
+      let players = ['Alice', 'Bob', 'Charlie', 'Dana'];
+      let items = ['Prize A', 'Prize B', 'Prize C', 'Prize D'];
+      let revealMode = 'all';
+      let bridgeActive = false;
+      let isBusy = false;
+
+      let game = null;
+      // game = { gameId, seed, revealMode, players[], items[], mapping[],
+      //          perm[], rungs[], numLevels, layout, paths[], endLines[],
+      //          revealed: Set, animQueue[] }
+
+      let animState = null;
+      let animFrameId = null;
+      let canvasCtx = null;
+
+      const COLORS = [
+        '#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6',
+        '#1abc9c','#e67e22','#34495e','#e91e63','#00bcd4',
+        '#8bc34a','#ff5722','#673ab7','#009688','#ffc107',
+        '#795548','#607d8b','#f44336','#2196f3','#4caf50',
+      ];
+
+      // ═══════════════════════════════════════════════════════════
+      // SEEDED RNG (identical to server)
+      // ═══════════════════════════════════════════════════════════
+      function hashSeed(s) {
+        let h = 0;
+        for (let i = 0; i < s.length; i++) { h = ((h << 5) - h + s.charCodeAt(i)) | 0; }
+        return h >>> 0;
+      }
+      function mkRng(seed) {
+        let st = hashSeed(seed);
+        return () => {
+          st += 0x6d2b79f5;
+          let z = st;
+          z = Math.imul(z ^ (z >>> 15), z | 1);
+          z ^= z + Math.imul(z ^ (z >>> 7), z | 61);
+          return ((z ^ (z >>> 14)) >>> 0) / 4294967296;
+        };
+      }
+      function fisherYates(arr, seed) {
+        const r = [...arr], rng = mkRng(seed);
+        for (let i = r.length - 1; i > 0; i--) {
+          const j = Math.floor(rng() * (i + 1));
+          [r[i], r[j]] = [r[j], r[i]];
+        }
+        return r;
+      }
+      function genSeed() { return Math.random().toString(36).slice(2, 14); }
+
+      // ═══════════════════════════════════════════════════════════
+      // LADDER MODEL
+      // ═══════════════════════════════════════════════════════════
+      function traceEnds(n, rungs, numLevels) {
+        const byLv = {};
+        for (const r of rungs) (byLv[r.lv] ??= []).push(r);
+        const ends = [];
+        for (let s = 0; s < n; s++) {
+          let line = s;
+          for (let lv = 0; lv < numLevels; lv++)
+            for (const r of (byLv[lv] || []))  {
+              if (r.left === line) { line++; break; }
+              if (r.left + 1 === line) { line--; break; }
+            }
+          ends.push(line);
+        }
+        return ends;
+      }
+
+      function bubbleSwaps(arr) {
+        const a = [...arr], n = a.length, sets = [];
+        let changed = true;
+        while (changed) {
+          changed = false;
+          const sw = [], used = new Set();
+          for (let i = 0; i < n - 1; i++) {
+            if (!used.has(i) && !used.has(i+1) && a[i] > a[i+1]) {
+              [a[i], a[i+1]] = [a[i+1], a[i]];
+              sw.push(i); used.add(i); used.add(i+1);
+              changed = true;
+            }
+          }
+          if (sw.length) sets.push(sw);
+        }
+        return sets;
+      }
+
+      function buildLadder(perm, n, seed) {
+        const rng = mkRng(seed + ':vis');
+        const totalLv = Math.min(8 + n * 2, 25);
+        const randLv = Math.max(Math.floor(totalLv * 0.6), 4);
+        const rungs = [];
+
+        for (let lv = 0; lv < randLv; lv++) {
+          const used = new Set();
+          for (let i = 0; i < n - 1; i++) {
+            if (!used.has(i) && !used.has(i+1) && rng() < 0.38) {
+              rungs.push({ lv, left: i });
+              used.add(i); used.add(i+1);
+            }
+          }
+        }
+
+        const cur = traceEnds(n, rungs, randLv);
+        const corr = new Array(n);
+        for (let i = 0; i < n; i++) corr[cur[i]] = perm[i];
+
+        let lv = randLv;
+        for (const sw of bubbleSwaps(corr)) {
+          for (const left of sw) rungs.push({ lv, left });
+          lv++;
+        }
+
+        return { rungs, numLevels: Math.max(lv + 1, totalLv) };
+      }
+
+      // ═══════════════════════════════════════════════════════════
+      // CANVAS LAYOUT & PATHS
+      // ═══════════════════════════════════════════════════════════
+      function computeLayout(n, numLevels, containerW) {
+        const PAD_T = 48, PAD_B = 48, PAD_S = 38;
+        const minSpacing = 60;
+        const cw = Math.max(containerW, n * minSpacing + PAD_S * 2);
+        const ch = Math.min(Math.max(340, 300 + n * 15), 580);
+        const lineSpacing = (cw - PAD_S * 2) / Math.max(n - 1, 1);
+        const levelSpacing = (ch - PAD_T - PAD_B) / (numLevels + 1);
+        return {
+          cw, ch, padT: PAD_T, padB: PAD_B, padS: PAD_S,
+          lineSpacing, levelSpacing,
+          lx: i => PAD_S + i * lineSpacing,
+          ly: lv => PAD_T + (lv + 1) * levelSpacing,
+          topY: PAD_T,
+          bottomY: ch - PAD_B,
+        };
+      }
+
+      function computePaths(n, rungs, numLevels, layout) {
+        const byLv = {};
+        for (const r of rungs) (byLv[r.lv] ??= []).push(r);
+        const paths = [], endLines = [];
+        for (let s = 0; s < n; s++) {
+          let line = s;
+          const pts = [{ x: layout.lx(line), y: layout.topY }];
+          for (let lv = 0; lv < numLevels; lv++) {
+            for (const r of (byLv[lv] || [])) {
+              if (r.left === line) {
+                pts.push({ x: layout.lx(line), y: layout.ly(lv) });
+                line++;
+                pts.push({ x: layout.lx(line), y: layout.ly(lv) });
+                break;
+              }
+              if (r.left + 1 === line) {
+                pts.push({ x: layout.lx(line), y: layout.ly(lv) });
+                line--;
+                pts.push({ x: layout.lx(line), y: layout.ly(lv) });
+                break;
+              }
+            }
+          }
+          pts.push({ x: layout.lx(line), y: layout.bottomY });
+          paths.push(pts);
+          endLines.push(line);
+        }
+        return { paths, endLines };
+      }
+
+      // ═══════════════════════════════════════════════════════════
+      // CANVAS DRAWING
+      // ═══════════════════════════════════════════════════════════
+      function initCanvas(layout) {
+        const canvas = document.getElementById('ladder-canvas');
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = Math.round(layout.cw * dpr);
+        canvas.height = Math.round(layout.ch * dpr);
+        canvas.style.width = layout.cw + 'px';
+        canvas.style.height = layout.ch + 'px';
+        const ctx = canvas.getContext('2d');
+        ctx.scale(dpr, dpr);
+        canvasCtx = ctx;
+        return ctx;
+      }
+
+      function pointOnPath(path, t) {
+        if (t <= 0) return { x: path[0].x, y: path[0].y, si: 0 };
+        if (t >= 1) return { x: path[path.length-1].x, y: path[path.length-1].y, si: path.length-2 };
+        let total = 0;
+        const segs = [];
+        for (let i = 1; i < path.length; i++) {
+          const dx = path[i].x - path[i-1].x, dy = path[i].y - path[i-1].y;
+          const l = Math.sqrt(dx*dx + dy*dy);
+          segs.push(l); total += l;
+        }
+        let target = t * total, acc = 0;
+        for (let i = 0; i < segs.length; i++) {
+          if (acc + segs[i] >= target) {
+            const f = (target - acc) / segs[i];
+            return {
+              x: path[i].x + (path[i+1].x - path[i].x) * f,
+              y: path[i].y + (path[i+1].y - path[i].y) * f,
+              si: i,
+            };
+          }
+          acc += segs[i];
+        }
+        return { x: path[path.length-1].x, y: path[path.length-1].y, si: path.length-2 };
+      }
+
+      function easeInOutCubic(t) {
+        return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
+      }
+
+      function truncText(ctx, str, maxW) {
+        if (ctx.measureText(str).width <= maxW) return str;
+        while (str.length > 1 && ctx.measureText(str + '…').width > maxW) str = str.slice(0, -1);
+        return str + '…';
+      }
+
+      function drawFrame(progress) {
+        const ctx = canvasCtx;
+        const g = game;
+        const L = g.layout;
+        const n = g.players.length;
+
+        ctx.clearRect(0, 0, L.cw, L.ch);
+        ctx.fillStyle = '#fafbfe';
+        ctx.fillRect(0, 0, L.cw, L.ch);
+
+        // Vertical lines
+        ctx.strokeStyle = '#d0d5e0';
+        ctx.lineWidth = 1.5;
+        for (let i = 0; i < n; i++) {
+          const x = L.lx(i);
+          ctx.beginPath(); ctx.moveTo(x, L.topY); ctx.lineTo(x, L.bottomY); ctx.stroke();
+        }
+
+        // Rungs
+        ctx.strokeStyle = '#a0a8ba';
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        for (const r of g.rungs) {
+          const y = L.ly(r.lv), x1 = L.lx(r.left), x2 = L.lx(r.left + 1);
+          ctx.beginPath(); ctx.moveTo(x1, y); ctx.lineTo(x2, y); ctx.stroke();
+        }
+
+        // Revealed trails
+        for (const idx of g.revealed) {
+          drawTrail(ctx, g.paths[idx], COLORS[idx % COLORS.length], 1.0);
+        }
+
+        // Animating trails
+        if (animState) {
+          for (const idx of animState.indices) {
+            const c = COLORS[idx % COLORS.length];
+            drawTrail(ctx, g.paths[idx], c, progress);
+            const pt = pointOnPath(g.paths[idx], progress);
+            drawMarker(ctx, pt.x, pt.y, c);
+          }
+        }
+
+        // Revealed bottom-line set
+        const revealedBottom = new Set();
+        for (const idx of g.revealed) revealedBottom.add(g.perm[idx]);
+        if (animState && progress >= 1) {
+          for (const idx of animState.indices) revealedBottom.add(g.perm[idx]);
+        }
+
+        const maxLabelW = L.lineSpacing * 0.88;
+        const FONT = 'Inter, system-ui, sans-serif';
+
+        // Player labels (top)
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        for (let i = 0; i < n; i++) {
+          const x = L.lx(i);
+          const col = COLORS[i % COLORS.length];
+          const isAnimating = animState?.indices.includes(i);
+          const isRevealed = g.revealed.has(i);
+
+          ctx.font = `bold 11px ${FONT}`;
+          const label = truncText(ctx, g.players[i], maxLabelW - 12);
+          const tw = ctx.measureText(label).width;
+          const bw = tw + 14, bh = 22, bx = x - bw/2, by = L.topY - bh - 6;
+
+          ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 5);
+          ctx.fillStyle = (isRevealed || isAnimating) ? col : '#eef0f8';
+          ctx.fill();
+
+          ctx.fillStyle = (isRevealed || isAnimating) ? '#fff' : '#555';
+          ctx.fillText(label, x, by + bh/2);
+        }
+
+        // Item labels (bottom)
+        // Build reverse map: bottomCol → playerIdx (who arrives there)
+        const bottomToPlayer = new Array(n).fill(-1);
+        for (let p = 0; p < n; p++) bottomToPlayer[g.endLines[p]] = p;
+
+        for (let i = 0; i < n; i++) {
+          const x = L.lx(i);
+          const showItem = g.revealMode === 'all' ? (g.revealed.size === n || progress >= 1) : revealedBottom.has(i);
+          const playerIdx = bottomToPlayer[i];
+          const col = playerIdx !== -1 ? COLORS[playerIdx % COLORS.length] : '#aaa';
+
+          ctx.font = `bold 11px ${FONT}`;
+          const label = showItem ? truncText(ctx, g.items[i], maxLabelW - 12) : '?';
+          const tw = ctx.measureText(label).width;
+          const bw = tw + 14, bh = 22, bx = x - bw/2, by = L.bottomY + 6;
+
+          ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 5);
+          ctx.fillStyle = showItem ? col : '#f0f1f6';
+          ctx.fill();
+
+          ctx.fillStyle = showItem ? '#fff' : '#bbb';
+          ctx.fillText(label, x, by + bh/2);
+        }
+      }
+
+      function drawTrail(ctx, path, color, t) {
+        if (path.length < 2 || t <= 0) return;
+        const pt = pointOnPath(path, t);
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 3.5;
+        ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        ctx.shadowColor = color; ctx.shadowBlur = 6;
+        ctx.beginPath();
+        ctx.moveTo(path[0].x, path[0].y);
+        for (let i = 1; i <= pt.si; i++) ctx.lineTo(path[i].x, path[i].y);
+        ctx.lineTo(pt.x, pt.y);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function drawMarker(ctx, x, y, color) {
+        ctx.save();
+        ctx.beginPath(); ctx.arc(x, y, 7, 0, Math.PI * 2);
+        ctx.fillStyle = color; ctx.fill();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.stroke();
+        ctx.restore();
+      }
+
+      // ═══════════════════════════════════════════════════════════
+      // ANIMATION
+      // ═══════════════════════════════════════════════════════════
+      const ANIM_DELAY = 400;
+      const ANIM_DURATION_ALL = 2200;
+      const ANIM_DURATION_SINGLE = 1600;
+
+      function stopAnim() {
+        if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
+        animState = null;
+      }
+
+      function runAnimation(indices, duration, onDone) {
+        stopAnim();
+        animState = { indices, startTime: null };
+        const totalMs = ANIM_DELAY + duration;
+
+        function loop(ts) {
+          if (!animState) return;
+          if (!animState.startTime) animState.startTime = ts;
+          const elapsed = ts - animState.startTime;
+
+          if (elapsed < ANIM_DELAY) {
+            drawFrame(0);
+            animFrameId = requestAnimationFrame(loop);
+            return;
+          }
+
+          const raw = Math.min((elapsed - ANIM_DELAY) / duration, 1);
+          const progress = easeInOutCubic(raw);
+          drawFrame(progress);
+
+          if (raw < 1) {
+            animFrameId = requestAnimationFrame(loop);
+          } else {
+            for (const idx of indices) game.revealed.add(idx);
+            animState = null;
+            drawFrame(1);
+            updateRevealUI();
+            onDone?.();
+          }
+        }
+
+        animFrameId = requestAnimationFrame(loop);
+      }
+
+      // ═══════════════════════════════════════════════════════════
+      // MCP BRIDGE
+      // ═══════════════════════════════════════════════════════════
+      let rpcId = 0;
+      const pending = new Map();
+
+      const notify = (method, params) =>
+        window.parent.postMessage({ jsonrpc: '2.0', method, params }, '*');
+
+      const request = (method, params) =>
+        new Promise((resolve, reject) => {
+          const id = ++rpcId;
+          pending.set(id, { resolve, reject });
+          window.parent.postMessage({ jsonrpc: '2.0', id, method, params }, '*');
+        });
+
+      window.addEventListener('message', (ev) => {
+        if (ev.source !== window.parent) return;
+        const m = ev.data;
+        if (!m || m.jsonrpc !== '2.0') return;
+        if (typeof m.id === 'number') {
+          const p = pending.get(m.id);
+          if (!p) return;
+          pending.delete(m.id);
+          m.error ? p.reject(m.error) : p.resolve(m.result);
+          return;
+        }
+        if (m.method === 'ui/notifications/tool-result') applyToolResult(m.params);
+      }, { passive: true });
+
+      let bridgeReady;
+
+      async function initBridge() {
+        const inIframe = window.parent !== window;
+        if (!inIframe) { bridgeActive = false; return; }
+        try {
+          const prom = request('ui/initialize', {
+            appInfo: { name: 'ladder-widget', version: '1.0.0' },
+            appCapabilities: {},
+            protocolVersion: '2026-01-26',
+          });
+          const timeout = new Promise((_, rej) => setTimeout(() => rej('timeout'), 2000));
+          await Promise.race([prom, timeout]);
+          notify('ui/notifications/initialized', {});
+          bridgeActive = true;
+        } catch {
+          bridgeActive = false;
+        }
+      }
+
+      async function callTool(name, args) {
+        if (bridgeActive) {
+          await bridgeReady;
+          return await request('tools/call', { name, arguments: args });
+        }
+        return localCall(name, args);
+      }
+
+      // ═══════════════════════════════════════════════════════════
+      // STANDALONE LOCAL LOGIC
+      // ═══════════════════════════════════════════════════════════
+      let localGameState = null;
+
+      function localCall(name, args) {
+        switch (name) {
+          case 'create_game': {
+            const ps = args.players.map(s => s.trim()).filter(s => s);
+            const its = args.items.map(s => s.trim()).filter(s => s);
+            if (ps.length < 2) return { isError: true, content: [{ type: 'text', text: 'At least 2 players are required.' }] };
+            if (its.length === 0) return { isError: true, content: [{ type: 'text', text: 'Items list cannot be empty.' }] };
+            if (ps.length !== its.length) return { isError: true, content: [{ type: 'text', text: `Number of items must match number of players. You have ${ps.length} players and ${its.length} items.` }] };
+            const seed = args.seed || genSeed();
+            const shuffled = fisherYates(its, seed);
+            const mapping = ps.map((p, i) => ({ player: p, item: shuffled[i] }));
+            const rm = args.revealMode || 'all';
+            localGameState = { players: ps, items: its, seed, mapping, revealMode: rm };
+            return { structuredContent: { gameId: 'local-' + Date.now(), seed, revealMode: rm, players: ps, items: its, mapping, totalCount: ps.length, revealedCount: rm === 'one-by-one' ? 0 : ps.length } };
+          }
+          case 'reshuffle': {
+            if (!localGameState) return { isError: true, content: [{ type: 'text', text: 'No active game.' }] };
+            const seed = args.seed || genSeed();
+            const shuffled = fisherYates(localGameState.items, seed);
+            const mapping = localGameState.players.map((p, i) => ({ player: p, item: shuffled[i] }));
+            localGameState = { ...localGameState, seed, mapping };
+            return { structuredContent: { gameId: args.gameId, seed, revealMode: localGameState.revealMode, players: localGameState.players, items: localGameState.items, mapping, totalCount: mapping.length, revealedCount: 0 } };
+          }
+          case 'reveal_next': return { ok: true };
+          case 'export_result': {
+            if (!localGameState) return { isError: true, content: [{ type: 'text', text: 'No active game.' }] };
+            const m = localGameState.mapping;
+            if (args.format === 'json') {
+              return { structuredContent: { output: JSON.stringify({ mapping: m, seed: localGameState.seed }, null, 2) } };
+            }
+            const txt = `Ladder Pick Results\n${'─'.repeat(30)}\n${m.map((p,i) => `${i+1}. ${p.player} → ${p.item}`).join('\n')}\n${'─'.repeat(30)}\nSeed: ${localGameState.seed}`;
+            return { structuredContent: { output: txt } };
+          }
+        }
+      }
+
+      // ═══════════════════════════════════════════════════════════
+      // GAME CONTROLLER
+      // ═══════════════════════════════════════════════════════════
+      function applyToolResult(params) {
+        const sc = params?.structuredContent;
+        if (sc?.mapping) startLadderFromResult(sc);
+      }
+
+      function startLadderFromResult(sc) {
+        const ps = sc.players || players;
+        const its = sc.items || items;
+        const mapping = sc.mapping;
+        const rm = sc.revealMode || revealMode;
+        const seed = sc.seed || '';
+
+        // Sync input UI to reflect whatever players/items the server used
+        players = [...ps];
+        items = [...its];
+        revealMode = rm;
+        renderAll();
+        document.querySelectorAll('#reveal-toggle button').forEach(b => {
+          b.classList.toggle('active', b.dataset.mode === rm);
+        });
+
+        const perm = mapping.map(m => its.indexOf(m.item));
+        const n = ps.length;
+        const { rungs, numLevels } = buildLadder(perm, n, seed);
+
+        const containerW = document.getElementById('canvas-wrap').clientWidth || 460;
+        const layout = computeLayout(n, numLevels, containerW);
+        const { paths, endLines } = computePaths(n, rungs, numLevels, layout);
+
+        game = {
+          gameId: sc.gameId, seed, revealMode: rm,
+          players: ps, items: its, mapping,
+          perm, rungs, numLevels, layout, paths, endLines,
+          revealed: new Set(),
+        };
+
+        document.getElementById('ladder-card').classList.add('visible');
+        document.getElementById('seed-display').textContent = 'Seed: ' + seed;
+        initCanvas(layout);
+        updateRevealUI();
+
+        if (rm === 'all') {
+          const allIdx = ps.map((_, i) => i);
+          runAnimation(allIdx, ANIM_DURATION_ALL, null);
+        } else {
+          drawFrame(0);
+        }
+
+        document.getElementById('ladder-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      function updateRevealUI() {
+        if (!game) return;
+        const revBtn = document.getElementById('reveal-next-btn');
+        const statusEl = document.getElementById('reveal-status');
+        if (game.revealMode === 'one-by-one') {
+          const remaining = game.players.length - game.revealed.size;
+          revBtn.style.display = remaining > 0 ? 'inline-flex' : 'none';
+          statusEl.textContent = remaining > 0
+            ? `${game.revealed.size}/${game.players.length} revealed`
+            : `All ${game.players.length} revealed!`;
+        } else {
+          revBtn.style.display = 'none';
+          statusEl.textContent = '';
+        }
+      }
+
+      // ═══════════════════════════════════════════════════════════
+      // UI EVENT HANDLERS
+      // ═══════════════════════════════════════════════════════════
+      const $  = id => document.getElementById(id);
+
+      function renderTags(listId, arr, onRemove) {
+        const el = $(listId);
+        el.innerHTML = '';
+        arr.forEach((v, i) => {
+          const tag = document.createElement('span');
+          tag.className = 'tag';
+          tag.textContent = v;
+          const btn = document.createElement('button');
+          btn.textContent = '×'; btn.title = 'Remove';
+          btn.onclick = () => { onRemove(i); renderAll(); };
+          tag.appendChild(btn);
+          el.appendChild(tag);
+        });
+      }
+
+      function renderAll() {
+        renderTags('players-list', players, i => players.splice(i, 1));
+        renderTags('items-list', items, i => items.splice(i, 1));
+      }
+
+      function showError(msg) {
+        const el = $('error-msg');
+        el.textContent = msg;
+        el.classList.toggle('visible', !!msg);
+      }
+
+      function showToast(msg) {
+        const el = $('toast');
+        el.textContent = msg;
+        el.classList.add('show');
+        setTimeout(() => el.classList.remove('show'), 2200);
+      }
+
+      function setBusy(v) {
+        isBusy = v;
+        $('pick-btn').disabled = v;
+        $('reshuffle-btn').disabled = v;
+        $('reveal-next-btn').disabled = v;
+      }
+
+      // Add player
+      function addPlayer() {
+        const inp = $('player-input');
+        const v = inp.value.trim();
+        if (!v) return;
+        if (players.length >= 20) { showError('Maximum 20 players allowed.'); return; }
+        players.push(v); inp.value = ''; showError(''); renderAll();
+      }
+      // Add item
+      function addItem() {
+        const inp = $('item-input');
+        const v = inp.value.trim();
+        if (!v) return;
+        if (items.length >= 20) { showError('Maximum 20 items allowed.'); return; }
+        items.push(v); inp.value = ''; showError(''); renderAll();
+      }
+
+      $('add-player-btn').onclick = addPlayer;
+      $('add-item-btn').onclick = addItem;
+      $('player-input').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addPlayer(); } });
+      $('item-input').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addItem(); } });
+
+      // Reveal mode toggle
+      $('reveal-toggle').addEventListener('click', e => {
+        const btn = e.target.closest('button[data-mode]');
+        if (!btn) return;
+        revealMode = btn.dataset.mode;
+        $('reveal-toggle').querySelectorAll('button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+
+      // Pick!
+      $('pick-btn').addEventListener('click', async () => {
+        if (isBusy) return;
+        showError('');
+        if (players.length < 2) { showError('At least 2 players are required.'); return; }
+        if (items.length === 0) { showError('Items list cannot be empty.'); return; }
+        if (players.length !== items.length) {
+          showError(`Number of items must match number of players. You have ${players.length} players and ${items.length} items.`);
+          return;
+        }
+        setBusy(true);
+        const pickBtn = $('pick-btn');
+        pickBtn.textContent = 'Picking…';
+        try {
+          const seed = $('seed-input').value.trim() || undefined;
+          const res = await callTool('create_game', { players: [...players], items: [...items], seed, revealMode });
+          if (res?.isError) { showError(res.content?.[0]?.text || 'Error'); return; }
+          if (res?.structuredContent) startLadderFromResult(res.structuredContent);
+        } catch (err) {
+          showError(err?.message || 'Something went wrong.');
+        } finally {
+          setBusy(false);
+          pickBtn.textContent = '🎲 Pick!';
+        }
+      });
+
+      // Reshuffle
+      $('reshuffle-btn').addEventListener('click', async () => {
+        if (!game || isBusy) return;
+        setBusy(true);
+        try {
+          const res = await callTool('reshuffle', { gameId: game.gameId, seed: undefined });
+          if (res?.isError) { showError(res.content?.[0]?.text || 'Reshuffle failed.'); return; }
+          if (res?.structuredContent) startLadderFromResult(res.structuredContent);
+        } catch (err) {
+          showError(err?.message || 'Reshuffle failed.');
+        } finally {
+          setBusy(false);
+        }
+      });
+
+      // Reveal next
+      $('reveal-next-btn').addEventListener('click', async () => {
+        if (!game || isBusy || game.revealMode !== 'one-by-one') return;
+        const nextIdx = findNextUnrevealed();
+        if (nextIdx === -1) return;
+        setBusy(true);
+        try {
+          if (bridgeActive) await callTool('reveal_next', { gameId: game.gameId });
+          runAnimation([nextIdx], ANIM_DURATION_SINGLE, () => setBusy(false));
+        } catch {
+          setBusy(false);
+        }
+      });
+
+      function findNextUnrevealed() {
+        for (let i = 0; i < game.players.length; i++) {
+          if (!game.revealed.has(i)) return i;
+        }
+        return -1;
+      }
+
+      // Export
+      $('export-btn').addEventListener('click', async () => {
+        if (!game) return;
+        try {
+          const res = await callTool('export_result', { gameId: game.gameId, format: 'text' });
+          const text = res?.structuredContent?.output || res?.content?.[0]?.text ||
+            game.mapping.map((m,i) => `${i+1}. ${m.player} → ${m.item}`).join('\n');
+          await navigator.clipboard.writeText(text);
+          showToast('Copied to clipboard!');
+        } catch {
+          showToast('Export failed.');
+        }
+      });
+
+      // New game
+      $('new-game-btn').addEventListener('click', () => {
+        stopAnim();
+        game = null;
+        localGameState = null;
+        $('ladder-card').classList.remove('visible');
+        $('reveal-status').textContent = '';
+        $('input-card').scrollIntoView({ behavior: 'smooth' });
+      });
+
+      // ═══════════════════════════════════════════════════════════
+      // INIT
+      // ═══════════════════════════════════════════════════════════
+      renderAll();
+
+      bridgeReady = initBridge().then(() => {
+        if (!bridgeActive) {
+          document.body.classList.add('standalone');
+          $('standalone-banner').style.display = 'block';
+        }
+      });
+    </script>
+  </body>
+</html>

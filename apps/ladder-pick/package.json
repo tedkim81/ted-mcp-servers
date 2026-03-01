@@ -1,0 +1,32 @@
+{
+  "name": "ladder-pick",
+  "version": "1.0.0",
+  "description": "Ladder Pick — MCP server for random 1:1 matching via ladder game",
+  "type": "module",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "node --watch dist/server.js",
+    "build:watch": "tsc --watch"
+  },
+  "keywords": [
+    "chatgpt",
+    "mcp",
+    "ladder",
+    "pick",
+    "random"
+  ],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.20.0",
+  "dependencies": {
+    "@modelcontextprotocol/ext-apps": "^1.1.2",
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  }
+}
