@@ -54,7 +54,7 @@ function createLadderServer(): McpServer {
     {
       title: "Create ladder game",
       description:
-        "Creates a new ladder game with the given players and items, producing a random 1:1 matching.",
+        "Creates a random 1:1 matching between player labels and item labels for entertainment. Inputs must be non-sensitive labels or nicknames only — never real personal names, health data, financial information, or other sensitive personal information.",
       inputSchema: createGameInputSchema,
       annotations: TOOL_HINTS,
       _meta: {
@@ -76,7 +76,7 @@ function createLadderServer(): McpServer {
     {
       title: "Reshuffle",
       description:
-        "Reshuffles the matching of an existing game with a new seed.",
+        "Re-randomizes the matching of an existing ladder game with a new seed.",
       inputSchema: reshuffleInputSchema,
       annotations: TOOL_HINTS,
       _meta: {
@@ -96,7 +96,7 @@ function createLadderServer(): McpServer {
     {
       title: "Reveal next",
       description:
-        "Reveals the next player-item pair in one-by-one mode.",
+        "Reveals the next player-item pair in a one-by-one reveal mode game.",
       inputSchema: revealNextInputSchema,
       annotations: TOOL_HINTS,
       _meta: {
@@ -115,7 +115,7 @@ function createLadderServer(): McpServer {
     {
       title: "Export result",
       description:
-        "Exports the full game result as shareable text or JSON.",
+        "Returns the game result as plain text or JSON so the user can copy it.",
       inputSchema: exportResultInputSchema,
       annotations: {
         readOnlyHint: true,
@@ -139,12 +139,34 @@ function createLadderServer(): McpServer {
 const port = Number(process.env.PORT ?? 8787);
 const MCP_PATH = "/mcp";
 
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, GET, OPTIONS, DELETE",
-  "Access-Control-Allow-Headers": "content-type, mcp-session-id",
-  "Access-Control-Expose-Headers": "Mcp-Session-Id",
-};
+const ALLOWED_ORIGINS = new Set([
+  "https://chatgpt.com",
+  "https://chat.openai.com",
+]);
+
+function isAllowedOrigin(origin: string): boolean {
+  if (ALLOWED_ORIGINS.has(origin)) return true;
+  try {
+    const { hostname } = new URL(origin);
+    return hostname.endsWith(".chatgpt.com") || hostname.endsWith(".openai.com");
+  } catch {
+    return false;
+  }
+}
+
+function getCorsHeaders(requestOrigin?: string): Record<string, string> {
+  const origin =
+    requestOrigin && isAllowedOrigin(requestOrigin)
+      ? requestOrigin
+      : "https://chatgpt.com";
+  return {
+    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Methods": "POST, GET, OPTIONS, DELETE",
+    "Access-Control-Allow-Headers": "content-type, mcp-session-id",
+    "Access-Control-Expose-Headers": "Mcp-Session-Id",
+    Vary: "Origin",
+  };
+}
 
 const httpServer = createServer(async (req, res) => {
   if (!req.url) {
@@ -154,8 +176,10 @@ const httpServer = createServer(async (req, res) => {
 
   const url = new URL(req.url, `http://${req.headers.host ?? "localhost"}`);
 
+  const reqOrigin = req.headers.origin;
+
   if (req.method === "OPTIONS") {
-    res.writeHead(204, CORS_HEADERS).end();
+    res.writeHead(204, getCorsHeaders(reqOrigin)).end();
     return;
   }
 
@@ -172,7 +196,9 @@ const httpServer = createServer(async (req, res) => {
     req.method &&
     MCP_METHODS.has(req.method)
   ) {
-    Object.entries(CORS_HEADERS).forEach(([k, v]) => res.setHeader(k, v));
+    Object.entries(getCorsHeaders(reqOrigin)).forEach(([k, v]) =>
+      res.setHeader(k, v)
+    );
     res.setHeader(
       "Content-Security-Policy",
       "default-src 'none'; frame-ancestors 'self' https://chatgpt.com https://*.chatgpt.com"

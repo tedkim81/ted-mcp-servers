@@ -49,10 +49,6 @@ export async function handleExportResult(args: {
 
   return {
     content: [{ type: "text" as const, text: output }],
-    structuredContent: {
-      gameId: game.gameId,
-      format: args.format,
-      output,
-    },
+    structuredContent: { output },
   };
 }

@@ -10,13 +10,15 @@ export const createGameInputSchema = {
     .array(z.string().min(1))
     .min(2)
     .max(20)
-    .describe("List of participant names (2–20)"),
+    .describe(
+      "Labels or nicknames for each participant (2–20). Must not contain real personal names or sensitive information."
+    ),
   items: z
     .array(z.string().min(1))
     .min(2)
     .max(20)
     .describe(
-      "List of result items to assign — must have the same count as players"
+      "Labels for items to assign — must have the same count as players. Must not contain sensitive information."
     ),
   seed: z
     .string()
@@ -57,7 +59,6 @@ export async function handleCreateGame(args: {
     revealMode: args.revealMode,
     mapping,
     revealedCount: 0,
-    createdAt: Date.now(),
   };
 
   setGame(game);
@@ -69,8 +70,6 @@ export async function handleCreateGame(args: {
     players,
     items,
     mapping,
-    totalCount: mapping.length,
-    revealedCount: args.revealMode === "one-by-one" ? 0 : mapping.length,
   };
 
   const textSummary =

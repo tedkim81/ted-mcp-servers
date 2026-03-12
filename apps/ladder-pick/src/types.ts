@@ -13,5 +13,4 @@ export interface GameState {
   revealMode: RevealMode;
   mapping: Pairing[];
   revealedCount: number;
-  createdAt: number;
 }

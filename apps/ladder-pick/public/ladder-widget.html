@@ -3,6 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'" />
     <title>Ladder Pick</title>
     <style>
       :root {
@@ -597,18 +598,44 @@
       let rpcId = 0;
       const pending = new Map();
 
+      const TRUSTED_ORIGINS = new Set([
+        'https://chatgpt.com',
+        'https://chat.openai.com',
+      ]);
+      function isTrustedOrigin(origin) {
+        if (TRUSTED_ORIGINS.has(origin)) return true;
+        try {
+          const h = new URL(origin).hostname;
+          return h.endsWith('.chatgpt.com') || h.endsWith('.openai.com');
+        } catch { return false; }
+      }
+
+      let parentOrigin = 'https://chatgpt.com';
+      try {
+        if (document.referrer) {
+          const ref = new URL(document.referrer).origin;
+          if (isTrustedOrigin(ref)) parentOrigin = ref;
+        }
+      } catch {}
+
+      function sendToParent(msg) {
+        window.parent.postMessage(msg, parentOrigin);
+      }
+
       const notify = (method, params) =>
-        window.parent.postMessage({ jsonrpc: '2.0', method, params }, '*');
+        sendToParent({ jsonrpc: '2.0', method, params });
 
       const request = (method, params) =>
         new Promise((resolve, reject) => {
           const id = ++rpcId;
           pending.set(id, { resolve, reject });
-          window.parent.postMessage({ jsonrpc: '2.0', id, method, params }, '*');
+          sendToParent({ jsonrpc: '2.0', id, method, params });
         });
 
       window.addEventListener('message', (ev) => {
         if (ev.source !== window.parent) return;
+        if (!isTrustedOrigin(ev.origin)) return;
+        parentOrigin = ev.origin;
         const m = ev.data;
         if (!m || m.jsonrpc !== '2.0') return;
         if (typeof m.id === 'number') {
@@ -667,7 +694,7 @@
             const mapping = ps.map((p, i) => ({ player: p, item: shuffled[i] }));
             const rm = args.revealMode || 'all';
             localGameState = { players: ps, items: its, seed, mapping, revealMode: rm };
-            return { structuredContent: { gameId: 'local-' + Date.now(), seed, revealMode: rm, players: ps, items: its, mapping, totalCount: ps.length, revealedCount: rm === 'one-by-one' ? 0 : ps.length } };
+            return { structuredContent: { gameId: 'local-' + Date.now(), seed, revealMode: rm, players: ps, items: its, mapping } };
           }
           case 'reshuffle': {
             if (!localGameState) return { isError: true, content: [{ type: 'text', text: 'No active game.' }] };
@@ -675,7 +702,7 @@
             const shuffled = fisherYates(localGameState.items, seed);
             const mapping = localGameState.players.map((p, i) => ({ player: p, item: shuffled[i] }));
             localGameState = { ...localGameState, seed, mapping };
-            return { structuredContent: { gameId: args.gameId, seed, revealMode: localGameState.revealMode, players: localGameState.players, items: localGameState.items, mapping, totalCount: mapping.length, revealedCount: 0 } };
+            return { structuredContent: { gameId: args.gameId, seed, revealMode: localGameState.revealMode, players: localGameState.players, items: localGameState.items, mapping } };
           }
           case 'reveal_next': return { ok: true };
           case 'export_result': {

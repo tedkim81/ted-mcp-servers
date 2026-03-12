@@ -42,12 +42,6 @@ export async function handleRevealNext(args: { gameId: string }) {
           text: `All ${game.mapping.length} pairs have been revealed!`,
         },
       ],
-      structuredContent: {
-        gameId: args.gameId,
-        allRevealed: true,
-        revealedSoFar: game.mapping,
-        remainingCount: 0,
-      },
     };
   }
 
@@ -56,7 +50,6 @@ export async function handleRevealNext(args: { gameId: string }) {
   updateGame(args.gameId, { revealedCount: newRevealedCount });
 
   const remainingCount = game.mapping.length - newRevealedCount;
-  const revealedSoFar = game.mapping.slice(0, newRevealedCount);
 
   return {
     content: [
@@ -65,13 +58,5 @@ export async function handleRevealNext(args: { gameId: string }) {
         text: `Revealed: ${current.player} → ${current.item} (${remainingCount} remaining)`,
       },
     ],
-    structuredContent: {
-      gameId: args.gameId,
-      player: current.player,
-      item: current.item,
-      revealedSoFar,
-      remainingCount,
-      allRevealed: remainingCount === 0,
-    },
   };
 }

@@ -51,8 +51,6 @@ export async function handleReshuffle(args: {
       players: game.players,
       items: game.items,
       mapping: newMapping,
-      totalCount: newMapping.length,
-      revealedCount: 0,
     },
   };
 }
